@@ -12,6 +12,7 @@
   <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/Chart.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/jasny-bootstrap.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/webcam.min.js') }}"></script>
 
   <style>
   body {
@@ -24,6 +25,42 @@
   <script>
   $(document).ready(function(){
       $('[data-toggle="tooltip"]').tooltip();
+
+      Webcam.set({
+        width: 320,
+        height: 240,
+        dest_width: 640,
+        dest_height: 480,
+        image_format: 'jpeg',
+        jpeg_quality: 100,
+        force_flash: false,
+        flip_horiz: true
+      });
+
+      Webcam.attach( '#camera' );
+
+      $("#previewSnapshot").bind( "click", function() {
+        Webcam.freeze();
+        document.getElementById('pre_take_buttons').style.display = 'none';
+        document.getElementById('post_take_buttons').style.display = '';
+      });
+
+      $("#cancelPreview").bind( "click", function() {
+        Webcam.unfreeze();
+        document.getElementById('pre_take_buttons').style.display = '';
+        document.getElementById('post_take_buttons').style.display = 'none';
+      });
+
+      $("#saveSnapshot").bind( "click", function() {
+        Webcam.snap( function(data_uri) {
+          var raw_image_data = data_uri.replace(/^data\:image\/\w+\;base64\,/, '');
+          document.getElementById('base64_photo_data').value = raw_image_data;
+          $('#snapshot_modal').modal('hide')
+          document.getElementById('pre_take_buttons').style.display = '';
+          document.getElementById('post_take_buttons').style.display = 'none';
+        });
+      });
+
   });
   </script>
 
@@ -78,7 +115,7 @@
       <div class="form-group">
         <label for="badge_serial" class="col-sm-2 control-label">Badge Serial(s):</label>
         <div class="col-sm-10">
-          <input type="text" class="form-control" id="badge_serials" name="badge_serials" disabled value="{{ member.badge_serials }}" readonly>
+          <input type="text" class="form-control" id="badge_serials" name="badge_serials" value="{{ member.badge_serials }}" readonly>
         </div>
       </div>
 
@@ -187,6 +224,53 @@
         </div>
       </div>
 
+
+      <div class="form-group">
+        <label class="col-sm-2 control-label">Photo:</label>
+        <div class="col-sm-10">
+
+          <!-- Hidden data field for webcam photo -->
+          <input type="hidden" id="base64_photo_data" name="base64_photo_data" value=""/>
+
+          <!-- Button to trigger modal dialog for webcam capture -->
+          <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#snapshot_modal">
+            Take a photo via the webcam
+          </button>
+<!--
+          <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#snapshot_modal">
+            Upload a file
+          </button>
+-->
+          <!-- Modal Dialog for Webcam Capture -->
+          <div class="modal fade" id="snapshot_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  <h4>Take a photo!</h4>
+                  <div class="alert alert-info" role="alert">
+                      When capturing the photo, make sure to get the member's face fully inside the green rectanglar box.
+                  </div>
+                </div>
+                <div class="modal-body">
+                  <div class="center-block" id="camera" style="width:320px; height:240px;"></div>
+                  <img style="position:absolute;left:136px;top:20px;" src="{{ url_for('static', filename='images/target-dashed.png')}}">
+                </div>
+                <div class="modal-footer">
+                  <div id="pre_take_buttons">
+                    <button type="button" class="btn btn-danger center-block" id="previewSnapshot">Take Snapshot</button>
+                  </div>
+                  <div id="post_take_buttons" style="display:none;text-align:center;">
+                    <button type="button" class="btn btn-default" id="cancelPreview">Retake</button>
+                    <button type="button" class="btn btn-primary" id="saveSnapshot">Keep Photo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+<!--
       <div class="form-group">
         <label class="col-sm-2 control-label"><a href="/member/{{ member.stripe_id }}/files/photo.jpg" data-toggle="tooltip" title="Right-click to open in a new tab.">Photo:</a></label>
         <div class="col-sm-10">
@@ -198,7 +282,7 @@
           </div>
         </div>
       </div>
-
+-->
       <div class="form-group">
         <label class="col-sm-2 control-label"><a href="/member/{{ member.stripe_id }}/files/vetted-membership-form.pdf" data-toggle="tooltip" title="Right-click to open in a new tab.">Vetted Member Form:</a></label>
         <div class="col-sm-10">

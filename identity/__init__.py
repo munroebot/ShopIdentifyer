@@ -304,6 +304,7 @@ def update_member(request):
     cur = db.cursor()
 
     stripe_id = request.form.get('stripe_id')
+    badge_photo = None
 
     if request.files['liability_wavier_form'].filename != "":
         liability_wavier_form = request.files['liability_wavier_form'].read()
@@ -315,14 +316,14 @@ def update_member(request):
         cur.execute('update members set vetted_membership_form=%s where stripe_id=%s', (vetted_membership_form,stripe_id))
         db.commit()
 
-    if request.files['badge_photo'].filename != "":
-        badge_photo = request.files['badge_photo'].read()
-        cur.execute('update members set badge_photo=%s where stripe_id=%s', (badge_photo,stripe_id))
-        db.commit()
+    photo_base64 = request.form.get('base64_photo_data',default=None)
+
+    if photo_base64 != None:
+        badge_photo = base64.b64decode(photo_base64)
 
     insert_data = (
         request.form.get('drupal_id'),
-        request.form.get('member_status'    ),
+        request.form.get('member_status'),
         request.form.get('full_name'),
         request.form.get('nick_name'),
         request.form.get('stripe_email'),
@@ -331,10 +332,11 @@ def update_member(request):
         request.form.get('emergency_contact_name'),
         request.form.get('emergency_contact_mobile'),
         request.form.get('is_vetted','NOT VETTED'),
+        badge_photo,
         request.form.get('stripe_id'),
     )
 
-    cur.execute('update members set drupal_id=%s,member_status=%s,full_name=%s,nick_name=%s,stripe_email=%s,meetup_email=%s,mobile=%s,emergency_contact_name=%s,emergency_contact_mobile=%s,is_vetted=%s where stripe_id=%s', insert_data)
+    cur.execute('update members set drupal_id=%s,member_status=%s,full_name=%s,nick_name=%s,stripe_email=%s,meetup_email=%s,mobile=%s,emergency_contact_name=%s,emergency_contact_mobile=%s,is_vetted=%s,badge_photo=%s where stripe_id=%s', insert_data)
 
     db.commit()
     db.close()
@@ -765,3 +767,7 @@ def swipe_badge():
 
     message = {'message':swipe}
     return jsonify(message)
+
+@app.route('/cam/', methods=['GET','POST'])
+def cam_test():
+    return render_template('cam-test.html')
